@@ -27,8 +27,8 @@ def main(leveltoplay=0):
 ##        cl += 1
 
     leveltoplay %= number_of_levels
-    #l = open('levels/level%s.txt' %(str(leveltoplay+1))); mode = 0
-    l = open('data/super_hard_levels/level%s.txt' %(str(leveltoplay+1))); mode = 1
+    l = open('data/levels/level%s.txt' %(str(leveltoplay+1))); mode = 0
+    #l = open('data/super_hard_levels/level%s.txt' %(str(leveltoplay+1))); mode = 1
     level = eval(l.read())
     l.close()
     #level = levels[leveltoplay]
@@ -107,9 +107,9 @@ def main(leveltoplay=0):
     # aUTO
     moveindex = 0
     tomove = []
-    with open('data/moves/hard_levels_%s.txt' % (str(leveltoplay))) as m:
-                tomove=eval(m.readlines()[-1])
-                m.close()
+##    with open('data/moves/hard_levels_%s.txt' % (str(leveltoplay))) as m:
+##                tomove=eval(m.readlines()[-1])
+##                m.close()
 
     if mode == 0:
 

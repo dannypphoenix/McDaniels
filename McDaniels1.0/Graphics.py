@@ -73,7 +73,7 @@ class GraphicsManager:
         self.bg.fill((0,0,0,10))
 
         
-        self.fps = 0
+        self.fps = 60
         self.observedfps = [0,0,0,0,0,0,0,0,0,0]
         self.fpscounter = 0
         self.obsfpsconst = 0

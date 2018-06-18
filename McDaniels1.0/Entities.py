@@ -14,15 +14,28 @@ class Entity(pygame.sprite.Sprite):
         self.animationbase = 'idle'
         self.image=self.frames[self.animationbase+'0']
         self.internalFrameTimer = 0
+        self.animationspeed = 1
+        self.activeAnimation = False
         self.rect = rect
     def updateimg(self):
         newimg=self.animationbase+str(int(self.internalFrameTimer))
         if newimg in self.frames:
             self.image = self.frames[newimg]
         else:
+            self.activeAnimation = False
             self.internalFrameTimer = 0
             self.image = self.frames[self.animationbase+'0']
-        self.internalFrameTimer += 1/self.Time_Scale
+        self.internalFrameTimer += self.animationspeed/self.Time_Scale
+    def setAnimationState(self, basename, speed=1, override=False):
+        if basename+'0' in self.frames and \
+           (override or not self.activeAnimation):
+            #print('changing speed', basename)
+            self.animationspeed = speed
+            if self.animationbase != basename:
+                #print('changing name', basename)
+                self.animationbase = basename
+                self.internalFrameTimer = 0
+                self.activeAnimation = True
         
     
     def collide(self,o):
@@ -324,6 +337,7 @@ class Player(Character):
             # only jump if on the ground
             if self.onGround and not self.jetpack:
                 self.yvel -= 11/self.Time_Scale
+                self.setAnimationState('up', 0.2, 1)
             elif self.jetpack:
                 self.yvel -= 1/self.Time_Scale
                 laser = normal_laser(self.rect.left + 16,
@@ -341,16 +355,10 @@ class Player(Character):
                 laser.shooter = self
         if self.running:
             self.speed = self.running_speed
-            self.animationbase = 'running'
-            self.internalFrameTimer = 0
         elif self.sneaking:
             self.speed = self.sneaking_speed
-            self.animationbase = 'sneaking'
-            self.internalFrameTimer = 0
         else:
             self.speed = self.walking_speed
-            self.animationbase = 'walking'
-            self.internalFrameTimer = 0
 
             
         if self.left:
@@ -374,6 +382,17 @@ class Player(Character):
                                      self.game,
                                      (-1,0))
                 laser.shooter = self
+
+        if self.left or self.right:
+            if self.running:
+                self.setAnimationState('running',0.5)
+            elif self.sneaking:
+                self.setAnimationState('sneaking',0.2)
+            else:
+                self.setAnimationState('walking',0.2)
+
+        if not self.left and not self.right:
+            self.setAnimationState('idle',0.01)
 
 
         if self.continuousshoot != None:
@@ -413,17 +432,23 @@ class Enemy(Character):
         
         if   player.rect.left > self.rect.right:
             self.xvel = self.speed
+            self.setAnimationState('right',0.2)
 
         elif player.rect.right < self.rect.left:
             self.xvel = -self.speed
+            self.setAnimationState('left',0.2)
         if player.rect.bottom < self.rect.top:
-            if self.onGround: self.yvel -= 10
+            if self.onGround:
+                self.yvel -= 10
+                self.setAnimationState('up',0.2, 1)
 
 
 
                 
         shoot = random.randint(1, 20)
         if shoot == 1:
+            self.setAnimationState('shoot', 0.2, 1)
+            
             Tx = player.rect.left + 16
             Ty = player.rect.top  + 16
             Sx = self.rect.left   + 16
@@ -512,12 +537,15 @@ class HamburgurDrone(Character):
             
         if   target.rect.x > self.rect.x:
             self.xvel += self.speed
+            self.setAnimationState('right', 0.2)
 
         elif target.rect.x < self.rect.x:
             self.xvel -= self.speed
+            self.setAnimationState('left', 0.2)
             
         if target.rect.bottom <= self.rect.y:           
             self.yvel -= self.speed
+            self.setAnimationState('up', 0.2)
 
 
 
@@ -531,6 +559,8 @@ class HamburgurDrone(Character):
                 self.cycles = 0
                 
         if shoot == 1:
+            self.setAnimationState('shoot', 0.5)
+            
             Tx = target.rect.left + 16
             Ty = target.rect.top  + 16
             Sx = self.rect.left   + 16
@@ -553,6 +583,10 @@ class HamburgurDrone(Character):
 
             laser = normal_laser(Sx, Sy, self.game, direction)
             laser.shooter = self
+        else:
+            self.setAnimationState('idle', 0.1)
+            if random.randint(1,100) == 1:
+                self.setAnimationState('idle2', 0.2)
 
         Character.update(self)
         
@@ -595,12 +629,15 @@ class TomatobombDrone(HamburgurDrone):
         
         if   target.rect.x > self.rect.x:
             self.xvel += self.speed
+            self.setAnimationState('right', 0.2)
 
         elif target.rect.x < self.rect.x:
             self.xvel -= self.speed
+            self.setAnimationState('left', 0.2)
             
         if target.rect.bottom-160 <= self.rect.y:
             self.yvel -= self.speed*3#/distanceY/2
+            self.setAnimationState('up', 0.5)
 
         self.shoot += 1
         self.shoot %= 10
@@ -611,11 +648,17 @@ class TomatobombDrone(HamburgurDrone):
             if self.cycles >= self.cyclemax:
                 self.shoot = 0
                 self.cycles = 0
-                
-        for t in self.targets:
-            if abs(self.rect.x-t.rect.x)<32 and self.shoot == 0:
-                laser = bomb_laser(self.rect.left, self.rect.top, self.game)
-                laser.shooter = self
+
+        if self.shoot == 0:
+            self.setAnimationState('shoot', 0.5)
+            for t in self.targets:
+                if abs(self.rect.x-t.rect.x)<32:
+                    laser = bomb_laser(self.rect.left, self.rect.top, self.game)
+                    laser.shooter = self
+        else:
+            self.setAnimationState('idle')
+            if random.randint(1,100) == 1:
+                self.setAnimationState('idle2', 0.2)
 
         Character.update(self)
 
@@ -667,6 +710,7 @@ class SniperDrone(HamburgurDrone):
                 self.cycles = 0
         
         if shoot == 1:
+            self.setAnimationState('shoot',0.5)
             Tx = target.rect.left + 16
             Ty = target.rect.top  + 16
             Sx = self.rect.left   + 16
@@ -692,6 +736,11 @@ class SniperDrone(HamburgurDrone):
             laser.shooter = self
             laser.dissipation = 0
             laser.damage = 100
+        else:
+            self.setAnimationState('idle')
+            if random.randint(1,100) == 1:
+                self.setAnimationState('idle2', 0.2)
+                
 
         Character.update(self)
 
@@ -724,12 +773,17 @@ class MachineGunDrone(HamburgurDrone):
         
         if   target.rect.x > self.rect.x:
             self.xvel += self.speed
+            self.setAnimationState('right', 0.2)
 
         elif target.rect.x < self.rect.x:
             self.xvel -= self.speed
+            self.setAnimationState('left', 0.2)
             
         if target.rect.bottom <= self.rect.y:
-            self.yvel -= self.speed*3
+            self.yvel -= self.speed
+            self.setAnimationState('up', 0.2)
+        else:
+            self.setAnimationState('idle')
 
         Tx = target.rect.left + 16
         Ty = target.rect.top  + 16
