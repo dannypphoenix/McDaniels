@@ -7,29 +7,21 @@ class ImageLoader:
         self.imagedict = {
             'missingasset':{'idle0':self.missingasset},
             
-            'player':self.loadimage('data\pictures\playerTest0.png',
-                                     'data\pictures\player.frames'),
+            'player':self.loadimage('data\pictures\player.frames'),
             
-            'platform':self.loadimage('data\pictures\wallTest.gif',
-                                     'data\pictures\platform.frames'),
+            'platform':self.loadimage('data\pictures\platform.frames'),
             
-            'drone':self.loadimage('data\pictures\BounceTest1.gif',
-                                   'data\pictures\\bounceblock.frames'),
+            'drone':self.loadimage('data\pictures\\bounceblock.frames'),
             
-            'bounceblock':self.loadimage('data\pictures\BounceTest1.gif',
-                                         'data\pictures\\bounceblock.frames'),
+            'bounceblock':self.loadimage('data\pictures\\bounceblock.frames'),
             
-            'enemy':self.loadimage('data\pictures\enemyTest.gif',
-                                     'data\pictures\enemy.frames'),
+            'enemy':self.loadimage('data\pictures\enemy.frames'),
             
-            'blockhider':self.loadimage('data\pictures\BlockTest0.gif',
-                                     'data\pictures\\blockhider.frames'),
+            'blockhider':self.loadimage('data\pictures\\blockhider.frames'),
             
-            'exitblock':self.loadimage('data\pictures\ExitBlockTest1.gif',
-                                     'data\pictures\exitblock.frames'),
+            'exitblock':self.loadimage('data\pictures\exitblock.frames'),
 
-            'zoomblock':self.loadimage('data\pictures\zoomBlock.png',
-                                       'data\pictures\zoomblock.frames'),
+            'zoomblock':self.loadimage('data\pictures\zoomblock.frames'),
             
             'laser':{'idle0':self.makerect((255, 215, 0, 255),5,5)},
 
@@ -48,12 +40,14 @@ class ImageLoader:
             'purpleblock':{'idle0':self.makerect((255, 0, 255, 255),5,5)},
             }
 
-    def loadimage(self, imagename, framename):
+    def loadimage(self, framename):
 
         outdict = {}
-        base = pygame.image.load(imagename)
 
         with open(framename,'r') as frame:
+            
+            base = pygame.image.load(frame.readline()[:-1])
+            
             gridsize = [int(i) for i in frame.readline().split(' ')]
             dimension = [int(i) for i in frame.readline().split(' ')]
             #label = [frame.readline() for i in range(

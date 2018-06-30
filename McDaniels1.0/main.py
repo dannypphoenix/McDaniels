@@ -27,8 +27,8 @@ def main(leveltoplay=0):
 ##        cl += 1
 
     leveltoplay %= number_of_levels
-    l = open('data/levels/level%s.txt' %(str(leveltoplay+1))); mode = 0
-    #l = open('data/super_hard_levels/level%s.txt' %(str(leveltoplay+1))); mode = 1
+    #l = open('data/levels/level%s.txt' %(str(leveltoplay+1))); mode = 0
+    l = open('data/super_hard_levels/level%s.txt' %(str(leveltoplay+1))); mode = 1
     level = eval(l.read())
     l.close()
     #level = levels[leveltoplay]
@@ -254,9 +254,9 @@ if __name__ == '__main__':
     pygame.mixer.music.load('data/Sounds/McdonaldsTest_5.wav')
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0)#.51)
-    currentnum = 0
+    currentnum = 2
     while 1:
         won = main(currentnum)
         if won:
             currentnum += 1
-            print(game.InputManager.buttonlog)
+            #print(game.InputManager.buttonlog)

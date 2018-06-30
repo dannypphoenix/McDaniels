@@ -16,6 +16,7 @@ class InputManager:
             pygame.K_DOWN:self.playerbuttons,
             pygame.K_LEFT:self.playerbuttons,
             pygame.K_RIGHT:self.playerbuttons,
+            pygame.MOUSEBUTTONDOWN:self.playerbuttons,
             pygame.K_l:self.slowtime,
             pygame.K_k:self.speedtime,
             pygame.K_p:self.print,
@@ -39,7 +40,7 @@ class InputManager:
         for e in pygame.event.get():
             
             if e.type == pygame.QUIT:
-                print(self.buttonlog)
+                #print(self.buttonlog)
                 pygame.quit()
                 raise SystemExit("QUIT")
 
@@ -53,28 +54,11 @@ class InputManager:
 
 
 
-##            if e.type == pygame.MOUSEBUTTONDOWN:
-##                Mx, My = pygame.mouse.get_pos()
-##                Mx -= camera.state.left
-##                My -= camera.state.top
-##                Px = player.rect.left + 2
-##                Py = player.rect.top  + 2
-##                deltaX = Mx - Px
-##                deltaY = My - Py
-##                
-##                denom = (deltaX**2 + deltaY**2)**.5
-##                deltaX /= denom
-####                deltaY /= denom
-##                time = denom/16#laser.speed
-##                yvel = (deltaY - 1/2*self.globallaser.gravity * \
-##                        time**2)/time
-##
-##                direction = (deltaX, yvel/16)#laser.speed)
-##
-##                laser = current_laser(Px,Py,
-##                                      self, 
-##                                      direction)
-##                laser.shooter = player
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                self.keymap[pygame.MOUSEBUTTONDOWN](
+                    pygame.MOUSEBUTTONDOWN,
+                    pygame.mouse.get_pos()
+                    )
 
 
 
@@ -88,24 +72,13 @@ class InputManager:
                     m=self.tomove[self.moveindex]
                 else:
                     break
-##                if m[1]=='up':
-##                    self.playerbuttons(pygame.K_w,m[2])
-##                if m[1]=='down':
-##                    self.playerbuttons(pygame.K_s,m[2])
-##                if m[1]=='left':
-##                    self.playerbuttons(pygame.K_a,m[2])
-##                if m[1]=='right':
-##                    self.playerbuttons(pygame.K_d,m[2])
-##                if m[1]=='running':
-##                    self.playerbuttons(pygame.K_SPACE,m[2])
-##                if m[1]=='sneaking':
-##                    self.playerbuttons(pygame.K_LSHIFT,m[2])
 
         if not self.GameManager.paused:
             self.total_frame_count += 1
 
 
     def playerbuttons(self,key,value):
+        if self.GameManager.paused: return
         self.GameManager.LogicManager.player.updatebutton(key,value)
         self.buttonlog.append((self.total_frame_count,key,value))
 
@@ -139,4 +112,7 @@ class InputManager:
 ##        return
         if value:
            self.GameManager.GraphicsManager.fps += 5
+
+        
+        
 

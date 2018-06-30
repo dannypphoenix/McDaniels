@@ -15,8 +15,11 @@ class Entity(pygame.sprite.Sprite):
         self.image=self.frames[self.animationbase+'0']
         self.internalFrameTimer = 0
         self.animationspeed = 1
+        self.animationpriority = 0
         self.activeAnimation = False
         self.rect = rect
+    def update(self):
+        self.updateimg()
     def updateimg(self):
         newimg=self.animationbase+str(int(self.internalFrameTimer))
         if newimg in self.frames:
@@ -26,16 +29,15 @@ class Entity(pygame.sprite.Sprite):
             self.internalFrameTimer = 0
             self.image = self.frames[self.animationbase+'0']
         self.internalFrameTimer += self.animationspeed/self.Time_Scale
-    def setAnimationState(self, basename, speed=1, override=False):
+    def setAnimationState(self, basename, speed=1, priority=0):
         if basename+'0' in self.frames and \
-           (override or not self.activeAnimation):
-            #print('changing speed', basename)
+           (priority>self.animationpriority or not self.activeAnimation):
+            self.animationpriority=priority
             self.animationspeed = speed
+            self.activeAnimation = True
             if self.animationbase != basename:
-                #print('changing name', basename)
                 self.animationbase = basename
                 self.internalFrameTimer = 0
-                self.activeAnimation = True
         
     
     def collide(self,o):
@@ -49,7 +51,7 @@ class ScreenEntity(pygame.sprite.Sprite):
 
 class Character(Entity):
     def __init__(self, x, y, width, height, img, game):
-        Entity.__init__(self, game,img,pygame.Rect(x, y, width, height))
+        super().__init__(game,img,pygame.Rect(x, y, width, height))
         self.xvel = 0
         self.yvel = 0
         self.moveX = 0
@@ -75,9 +77,12 @@ class Character(Entity):
         self.extraMoveY = 0
         self.extraXvel = 0
         self.extraMoveX = 0
+        self.idleanimations = ['idle2.']
+        self.idleanimationfreq = 1000
+        self.laser = normal_laser
 
     def update(self):
-        Entity.updateimg(self)
+        super().update()
 
         self.prevRect = self.rect.copy() 
         
@@ -157,6 +162,10 @@ class Character(Entity):
 
         if self.health < self.maxhealth and self.health != -1:
             self.health += self.regen
+
+        self.setAnimationState('idle',0.2)
+        if random.randint(0,self.idleanimationfreq)==0:
+            self.setAnimationState(random.choice(self.idleanimations),0.2,1)
 
     def collide(self, p):
         
@@ -249,6 +258,7 @@ class Character(Entity):
                     return
 
             elif isinstance(p, ZoomBlock):
+                p.active = True
                 if   xvel == 0:
                     self.xvel *= p.zoominess
                 if yvel == 0:
@@ -276,6 +286,30 @@ class Character(Entity):
                 self.yvel = 0
                 self.extraYvel = 0
                 #self.extraMoveYvel = 0
+
+    def shoot(self,Tx,Ty):
+        self.setAnimationState('shoot', 0.2, 6)
+            
+        Sx = self.rect.left   + 16
+        Sy = self.rect.top    + 16
+        deltaX = Tx - Sx
+        deltaY = Ty - Sy
+
+
+        denom = (deltaX**2 + deltaY**2)**.5
+
+        if denom == 0: denom = .1
+        deltaX /= denom
+        time = denom/16
+        
+        yvel_laser = (deltaY - \
+                    1/2*self.game.LogicManager.globallaser.gravity *\
+                      time**2)/time
+
+        direction = (deltaX, yvel_laser/16)
+
+        laser = self.laser(Sx, Sy, self.game, direction)
+        laser.shooter = self
 
 
 class Player(Character):
@@ -316,6 +350,12 @@ class Player(Character):
             self.left = value
         elif key == pygame.K_RIGHT:
             self.right = value
+        elif key == pygame.MOUSEBUTTONDOWN:
+            self.shoot(value[0]-\
+                         self.game.GraphicsManager.camera.state.left,
+                       value[1]-\
+                         self.game.GraphicsManager.camera.state.top
+                       )
         
     
     def update(self):
@@ -337,7 +377,7 @@ class Player(Character):
             # only jump if on the ground
             if self.onGround and not self.jetpack:
                 self.yvel -= 11/self.Time_Scale
-                self.setAnimationState('up', 0.2, 1)
+                self.setAnimationState('up', 0.2, 4)
             elif self.jetpack:
                 self.yvel -= 1/self.Time_Scale
                 laser = normal_laser(self.rect.left + 16,
@@ -385,14 +425,11 @@ class Player(Character):
 
         if self.left or self.right:
             if self.running:
-                self.setAnimationState('running',0.5)
+                self.setAnimationState('running',0.5,2)
             elif self.sneaking:
-                self.setAnimationState('sneaking',0.2)
+                self.setAnimationState('sneaking',0.2,2)
             else:
-                self.setAnimationState('walking',0.2)
-
-        if not self.left and not self.right:
-            self.setAnimationState('idle',0.01)
+                self.setAnimationState('walking',0.2, 2)
 
 
         if self.continuousshoot != None:
@@ -432,22 +469,22 @@ class Enemy(Character):
         
         if   player.rect.left > self.rect.right:
             self.xvel = self.speed
-            self.setAnimationState('right',0.2)
+            self.setAnimationState('right',0.2, 2)
 
         elif player.rect.right < self.rect.left:
             self.xvel = -self.speed
-            self.setAnimationState('left',0.2)
+            self.setAnimationState('left',0.2, 2)
         if player.rect.bottom < self.rect.top:
             if self.onGround:
                 self.yvel -= 10
-                self.setAnimationState('up',0.2, 1)
+                self.setAnimationState('up',0.2, 4)
 
 
 
                 
         shoot = random.randint(1, 20)
         if shoot == 1:
-            self.setAnimationState('shoot', 0.2, 1)
+            self.setAnimationState('shoot', 0.2, 6)
             
             Tx = player.rect.left + 16
             Ty = player.rect.top  + 16
@@ -537,15 +574,15 @@ class HamburgurDrone(Character):
             
         if   target.rect.x > self.rect.x:
             self.xvel += self.speed
-            self.setAnimationState('right', 0.2)
+            self.setAnimationState('right', 0.2, 1)
 
         elif target.rect.x < self.rect.x:
             self.xvel -= self.speed
-            self.setAnimationState('left', 0.2)
+            self.setAnimationState('left', 0.2, 1)
             
         if target.rect.bottom <= self.rect.y:           
             self.yvel -= self.speed
-            self.setAnimationState('up', 0.2)
+            self.setAnimationState('up', 0.2, 3)
 
 
 
@@ -559,7 +596,7 @@ class HamburgurDrone(Character):
                 self.cycles = 0
                 
         if shoot == 1:
-            self.setAnimationState('shoot', 0.5)
+            self.setAnimationState('shoot', 0.5, 5)
             
             Tx = target.rect.left + 16
             Ty = target.rect.top  + 16
@@ -583,10 +620,6 @@ class HamburgurDrone(Character):
 
             laser = normal_laser(Sx, Sy, self.game, direction)
             laser.shooter = self
-        else:
-            self.setAnimationState('idle', 0.1)
-            if random.randint(1,100) == 1:
-                self.setAnimationState('idle2', 0.2)
 
         Character.update(self)
         
@@ -655,10 +688,6 @@ class TomatobombDrone(HamburgurDrone):
                 if abs(self.rect.x-t.rect.x)<32:
                     laser = bomb_laser(self.rect.left, self.rect.top, self.game)
                     laser.shooter = self
-        else:
-            self.setAnimationState('idle')
-            if random.randint(1,100) == 1:
-                self.setAnimationState('idle2', 0.2)
 
         Character.update(self)
 
@@ -736,10 +765,6 @@ class SniperDrone(HamburgurDrone):
             laser.shooter = self
             laser.dissipation = 0
             laser.damage = 100
-        else:
-            self.setAnimationState('idle')
-            if random.randint(1,100) == 1:
-                self.setAnimationState('idle2', 0.2)
                 
 
         Character.update(self)
@@ -782,8 +807,6 @@ class MachineGunDrone(HamburgurDrone):
         if target.rect.bottom <= self.rect.y:
             self.yvel -= self.speed
             self.setAnimationState('up', 0.2)
-        else:
-            self.setAnimationState('idle')
 
         Tx = target.rect.left + 16
         Ty = target.rect.top  + 16
@@ -900,7 +923,7 @@ class BlockHider(HamburgurDrone):
 class normal_laser(Entity):
 
     def __init__(self, x, y, game, direction=(1,0)):
-        Entity.__init__(self, game,'laser',pygame.Rect(x, y, 5, 5))
+        super().__init__(game,'laser',pygame.Rect(x, y, 5, 5))
         self.game.LogicManager.lasers.add(self)
         self.speed = 16
         self.damage = 10
@@ -917,7 +940,7 @@ class normal_laser(Entity):
         self.prevRect = self.rect.copy()
 
     def update(self):
-        Entity.updateimg(self)
+        super().updateimg()
         self.prevRect = self.rect.copy()
         
         if self.damage > 0: self.damage -= self.dissipation
@@ -1285,13 +1308,13 @@ class WaterLazer(normal_laser):
 
 class Platform(Entity):
     def __init__(self, x, y, game,img='platform'):
-        Entity.__init__(self,game,img,pygame.Rect(x, y, 32, 32))
+        super().__init__(game,img,pygame.Rect(x, y, 32, 32))
         self.game.LogicManager.platforms.add(self)
         self.platforms = self.game.LogicManager.platforms
         self.destroyed = False
 
     def update(self):
-        Entity.updateimg(self)
+        super().update()
     def destroy(self):
         pass
 
@@ -1352,9 +1375,17 @@ class ZoomBlock(Platform):
     def __init__(self,x,y,game):
         Platform.__init__(self,x,y,game,'zoomblock')
         self.zoominess = 10
+        self.active = False
 ##        self.image = pygame.Surface((32, 32))
 ##        self.image.convert()
 ##        self.image.fill(pygame.Color("#1cfc11"))
+    def update(self):
+        self.setAnimationState('idle', 0.02*self.zoominess, 0)
+        super().update()
+        if self.active:
+            self.active = False
+            self.setAnimationState('idle', 0.05*self.zoominess, 1)
+        
 
 class ShooterBlock(Platform):
     def __init__(self,x,y,game):

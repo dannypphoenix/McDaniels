@@ -77,44 +77,15 @@ class LogicManager:
 
 
         for e1 in self.entities:
-                for name in e1.groups:
-                    for e2 in groups[name]:
-                        if e1==e2:continue
-                        if pygame.sprite.collide_rect(e1,e2):
-                            e1.collide(e2)
-                            #e2.collide(e1)
+            for name in e1.groups:
+                for e2 in groups[name]:
+                    if e1==e2:continue
+                    if pygame.sprite.collide_rect(e1,e2):
+                        e1.collide(e2)
 
         if self.player.done:
             self.GameManager.done = True
             
-
-##        ## UPDATING DIFFERENT ENTITIES
-##            
-##        ### LASERS
-##        self.lasers.remove(filter(lambda e: e.destroyed, self.lasers))
-##        self.lasers.update()
-##        
-##
-##        ### ENEMIES
-##        
-##
-##        # reset live/destroyed enemies
-##        self.live_enemies.empty()
-##        self.live_enemies.add(filter(lambda e: not e.destroyed, self.enemies))
-##        self.destroyed_enemies.empty()
-##        self.destroyed_enemies.add(filter(lambda e: e.destroyed, self.enemies))
-##
-##        # update
-##        self.live_enemies.update()
-##            
-##        
-##        ### DRONES
-##        self.drones.remove(filter(lambda e: e.destroyed, self.drones))
-##        #self.drones.update()
-##
-##        ### PLATFORMS
-##        self.platforms.remove(filter(lambda e: e.destroyed, self.platforms))
-##        #self.platforms.update()
 
         current_must = 0
         while current_must < len(self.mustdestroy):

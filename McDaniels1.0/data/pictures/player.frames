@@ -1,3 +1,4 @@
+data\pictures\playerTest0.png
 32 32
 2 4
 idle0
@@ -7,5 +8,5 @@ walking0
 walking1
 running0
 running1
-running2
+shoot0
 end
