@@ -229,7 +229,7 @@ def main(leveltoplay=0):
 
         if leveltoplay == 8:
             pass
-
+ 
         if leveltoplay == 9:
             pass
 
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     pygame.mixer.music.load('data/Sounds/McdonaldsTest_5.wav')
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0)#.51)
-    currentnum = 2
+    currentnum = 0
     while 1:
         won = main(currentnum)
         if won:

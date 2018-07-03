@@ -54,7 +54,8 @@ class ImageLoader:
             #    dimension[0]*dimension[1])]
             for y in range(dimension[1]):
                 for x in range(dimension[0]):
-                    aliases = [i[:-1] for i in frame.readline().split(' ')]
+                    aliases = [i for i in frame.readline()[:-1].split(' ')]
+                    print(aliases)
                     img = pygame.Surface(gridsize, pygame.SRCALPHA, 32)
                     img = img.convert_alpha()
                     img.blit(base,(-x*gridsize[0],-y*gridsize[1]))
