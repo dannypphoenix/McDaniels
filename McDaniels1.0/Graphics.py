@@ -26,6 +26,7 @@ class Camera(object):
         # stop scrolling at the top
         return pygame.Rect(l, t, w, h)
 
+
     def apply(self, target):
         if self.borderlimit and isinstance(target, Character):
             if not self.onscreen(target):
@@ -95,12 +96,12 @@ class GraphicsManager:
 
     def update(self):
 
-##        self.fpschecktimer -= 1
-##        if self.fpschecktimer <= 0:
-##            self.fpschecktimer = self.fpschecktimermax
-##            self.observedfps[self.fpscounter]=self.GameManager.timer.get_fps()
-##            self.fpscounter+=1;self.fpscounter%=len(self.observedfps)
-##            self.obsfpsconst = sum(self.observedfps)/len(self.observedfps)
+        self.fpschecktimer -= 1
+        if self.fpschecktimer <= 0:
+            self.fpschecktimer = self.fpschecktimermax
+            self.observedfps[self.fpscounter]=self.GameManager.timer.get_fps()
+            self.fpscounter+=1;self.fpscounter%=len(self.observedfps)
+            self.obsfpsconst = sum(self.observedfps)/len(self.observedfps)
 
         ## DRAW BACKGROUND
         for y in range(32):

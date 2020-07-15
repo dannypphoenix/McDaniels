@@ -1,20 +1,16 @@
-import pygame
+import pygame, time
 from Entities import *
 
 
 class LogicManager:
     
     def __init__(self,GameManager):
+        self.t = 0
         self.GameManager = GameManager
 
         # lists
         self.entities = pygame.sprite.Group()
-        self.platforms = pygame.sprite.Group()
-        self.enemies = pygame.sprite.Group()
-        self.live_enemies = pygame.sprite.Group()
-        self.destroyed_enemies = pygame.sprite.Group()
-        self.drones = pygame.sprite.Group()
-        self.lasers = pygame.sprite.Group()
+        self.mustdestroy = pygame.sprite.Group()
 
         # constants
         self.GRIDSIZE = 32
@@ -22,13 +18,7 @@ class LogicManager:
     def initnewlevel(self):
         # lists
         self.entities.empty()
-        self.platforms.empty()
-        self.enemies.empty()
-        self.live_enemies.empty()
-        self.destroyed_enemies.empty()
-        self.drones.empty()
-        self.lasers.empty()
-        self.mustdestroy = []
+        self.mustdestroy.empty()
 
         # global
         self.globallaser = GlobalLaser()
@@ -45,17 +35,17 @@ class LogicManager:
 
         self.current_laser = current_laser
 
-        if len(self.mustdestroy)==0:
-            mustdestroy = [0]
+        self.mustdestroythresh = len(self.mustdestroy)
+        if self.mustdestroythresh==0: self.mustdestroythresh = -1
 
     def update(self):
+        t1 = time.time()
         ## SCREEN UPDATING
 
         self.entities.remove(filter(lambda e: e.destroyed, self.entities))
         self.entities.update()
 
         
-
         ## COLLISION
         groups = {}
 
@@ -77,27 +67,25 @@ class LogicManager:
 
 
         for e1 in self.entities:
+            if isinstance(e1, Platform): continue
             for name in e1.groups:
                 for e2 in groups[name]:
                     if e1==e2:continue
                     if pygame.sprite.collide_rect(e1,e2):
                         e1.collide(e2)
-
+        #print(len(groups))
         if self.player.done:
             self.GameManager.done = True
             
+        self.mustdestroy.remove(filter(lambda e: e.destroyed, self.entities))
+        if len(self.mustdestroy)-self.mustdestroythresh <= 0:
+            self.GameManager.done = True
 
-        current_must = 0
-        while current_must < len(self.mustdestroy):
-            p = self.mustdestroy[current_must]
-            if p==0: break
-            if p.destroyed:
-                self.mustdestroy.remove(p)
-            else:
-                current_must += 1
+        
 
 
         self.total_frame_count += 1
+        self.t += time.time() - t1
 
 class GlobalLaser(object):
     def __init__(self):

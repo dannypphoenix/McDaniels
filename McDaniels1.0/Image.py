@@ -7,21 +7,21 @@ class ImageLoader:
         self.imagedict = {
             'missingasset':{'idle0':self.missingasset},
             
-            'player':self.loadimage('data\pictures\player.frames'),
+            'player':self.loadimage('data\\pictures\\player.frames'),
             
-            'platform':self.loadimage('data\pictures\platform.frames'),
+            'platform':self.loadimage('data\\pictures\\platform.frames'),
             
-            'drone':self.loadimage('data\pictures\\bounceblock.frames'),
+            'drone':self.loadimage('data\\pictures\\bounceblock.frames'),
             
-            'bounceblock':self.loadimage('data\pictures\\bounceblock.frames'),
+            'bounceblock':self.loadimage('data\\pictures\\bounceblock.frames'),
             
-            'enemy':self.loadimage('data\pictures\enemy.frames'),
+            'enemy':self.loadimage('data\\pictures\\enemy.frames'),
             
-            'blockhider':self.loadimage('data\pictures\\blockhider.frames'),
+            'blockhider':self.loadimage('data\\pictures\\blockhider.frames'),
             
-            'exitblock':self.loadimage('data\pictures\exitblock.frames'),
+            'exitblock':self.loadimage('data\\pictures\\exitblock.frames'),
 
-            'zoomblock':self.loadimage('data\pictures\zoomblock.frames'),
+            'zoomblock':self.loadimage('data\\pictures\\zoomblock.frames'),
             
             'laser':{'idle0':self.makerect((255, 215, 0, 255),5,5)},
 
@@ -55,7 +55,6 @@ class ImageLoader:
             for y in range(dimension[1]):
                 for x in range(dimension[0]):
                     aliases = [i for i in frame.readline()[:-1].split(' ')]
-                    print(aliases)
                     img = pygame.Surface(gridsize, pygame.SRCALPHA, 32)
                     img = img.convert_alpha()
                     img.blit(base,(-x*gridsize[0],-y*gridsize[1]))

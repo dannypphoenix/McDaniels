@@ -17,6 +17,7 @@ class Entity(pygame.sprite.Sprite):
         self.animationspeed = 1
         self.animationpriority = 0
         self.activeAnimation = False
+        self.destroyed = False
         self.rect = rect
     def update(self):
         self.updateimg()
@@ -50,6 +51,7 @@ class ScreenEntity(pygame.sprite.Sprite):
         self.rect = rect
 
 class Character(Entity):
+    n=0
     def __init__(self, x, y, width, height, img, game):
         super().__init__(game,img,pygame.Rect(x, y, width, height))
         self.xvel = 0
@@ -60,13 +62,8 @@ class Character(Entity):
         self.onGround = False
         self.maxGroundTime = 1
         self.groundTime = self.maxGroundTime
-##        self.image = pygame.image.load(img)
-        ## DEBUG TEST EDIT LATER FIX
-        #self.image.fill([random.randint(0,255) for i in range(3)])
-        self.destroyed = False
         self.health = 100
         self.maxhealth = 100
-        #self.healthbar = HealthBar(self)
         self.power = 1
         self.done = False
         self.speed = 4
@@ -86,7 +83,6 @@ class Character(Entity):
 
         self.prevRect = self.rect.copy() 
         
-        #platforms = self.game.LogicManager.platforms
     
         if not self.onGround:
             # only accelerate with gravity if in the air
@@ -118,7 +114,6 @@ class Character(Entity):
             ##print('die!')
 
 
-        #platforms = self.getCloseEntities(platforms)
 
 
         # remove decimals and store them
@@ -131,8 +126,6 @@ class Character(Entity):
         self.extraMoveX = moveX-int(moveX)
         moveX = int(moveX)
         
-##        # do x-axis collisions
-##        self.collide(self.xvel, 0, platforms)
 
         self.yvel += self.extraYvel
         self.extraYvel = self.yvel - int(self.yvel)
@@ -156,8 +149,6 @@ class Character(Entity):
         else:
             self.onGround = True
         self.groundTime -= 1/self.Time_Scale
-        # do y-axis collisions
-##        self.collide(0, self.yvel, platforms)
 
 
         if self.health < self.maxhealth and self.health != -1:
@@ -287,6 +278,7 @@ class Character(Entity):
                 self.extraYvel = 0
                 #self.extraMoveYvel = 0
 
+
     def shoot(self,Tx,Ty):
         self.setAnimationState('shoot', 0.2, 6)
             
@@ -369,8 +361,6 @@ class Player(Character):
 
 
         
-        entities = self.game.LogicManager.entities
-        platforms = self.game.LogicManager.platforms
 
         
         if self.up:
@@ -441,8 +431,7 @@ class Player(Character):
                                              self.rect.top+16,self.game)
                 laser.shooter = self
 
-            elif self.shoottimer > 0:
-                self.shoottimer -= 1
+            self.shoottimer -= 1
 
         Character.update(self)
 
@@ -455,13 +444,11 @@ class Enemy(Character):
     def __init__(self, x, y, game):
         Character.__init__(self, x, y, 32, 64, 'enemy',
                            game)
-        self.game.LogicManager.enemies.add(self)
         self.spawn = (x, y)
         self.timer = 1000
         self.max_timer = 1000
         self.respawn = True
         self.target = game.LogicManager.player
-        self.lasers = game.LogicManager.lasers
         
         
     def update(self):
@@ -523,34 +510,31 @@ class Enemy(Character):
 ##                #print('killed')
 
 
-class HamburgurDrone(Character):
+class HamburgerDrone(Character):
     def __init__(self, x, y, game,img='drone'):
         Character.__init__(self, x, y, 32, 32, img,
                            game)
-        self.game.LogicManager.drones.add(self)
         self.spawn = (x, y)
         self.timer = 0
         self.max_timer = 0
-        self.speed = .4
+        self.Xspeed = .4
+        self.Yspeed = .4
         self.friction = .9
-        self.destroyed = False
         self.synchronisedShooting = False
         self.setupSynchronisedShooting = True
         self.targets = []
         self.Wifi = None
         self.cyclemax = 1
         self.cycles = 0
-    def setupstuff(self, platforms):
+        self.shootchance = 20
+        
+    def synchronise(self, p):
         if self.synchronisedShooting and \
            self.setupSynchronisedShooting:
-            for p in platforms:
-                if isinstance(p, HamburgerWifiBlock):
-                    self.Wifi = p
-                    self.setupSynchronisedShooting = False
-                    return
+            self.Wifi = p
+            self.setupSynchronisedShooting = False
+            return
     def update(self):
-        platforms = self.game.LogicManager.platforms
-        self.setupstuff(platforms)
         if len(self.targets) > 0:
             target = self.targets[0]
             
@@ -573,27 +557,27 @@ class HamburgurDrone(Character):
 
             
         if   target.rect.x > self.rect.x:
-            self.xvel += self.speed
+            self.xvel += self.Xspeed
             self.setAnimationState('right', 0.2, 1)
 
         elif target.rect.x < self.rect.x:
-            self.xvel -= self.speed
+            self.xvel -= self.Xspeed
             self.setAnimationState('left', 0.2, 1)
             
         if target.rect.bottom <= self.rect.y:           
-            self.yvel -= self.speed
+            self.yvel -= self.Yspeed
             self.setAnimationState('up', 0.2, 3)
 
 
 
-        shoot = random.randint(1, 20)
-        if self.synchronisedShooting:
+        if self.synchronisedShooting and not self.setupSynchronisedShooting:
             shoot = 2
             if self.Wifi.cycletimer == 0:
                 self.cycles += 1
             if self.cycles >= self.cyclemax:
                 shoot = 1
                 self.cycles = 0
+        else: shoot = random.randint(1, self.shootchance)
                 
         if shoot == 1:
             self.setAnimationState('shoot', 0.5, 5)
@@ -626,15 +610,13 @@ class HamburgurDrone(Character):
 
 
 
-class TomatobombDrone(HamburgurDrone):
+class TomatobombDrone(HamburgerDrone):
     def __init__(self, x, y,game):
-        HamburgurDrone.__init__(self, x, y, game)
+        HamburgerDrone.__init__(self, x, y, game)
+        self.Yspeed *= 3
         self.shoot = 0
         
     def update(self):
-        platforms = self.game.LogicManager.platforms
-        entities = self.game.LogicManager.entities
-        self.setupstuff(platforms)
         if len(self.targets) > 0:
             target = self.targets[0]
             
@@ -653,11 +635,6 @@ class TomatobombDrone(HamburgurDrone):
                 self.xvel += random.randint(-1,1)*80/self.health
                 self.yvel += random.randint(-2,1)
             Character.update(self)
-            for e in entities:
-                if pygame.sprite.collide_rect(self, e):
-                    if isinstance(e, normal_laser):
-                        if e.shooter not in self.targets:
-                            self.targets.append(e.shooter)
             return
         
         if   target.rect.x > self.rect.x:
@@ -691,24 +668,15 @@ class TomatobombDrone(HamburgurDrone):
 
         Character.update(self)
 
-        for e in entities:
-            if pygame.sprite.collide_rect(self, e):
-                if isinstance(e, normal_laser) and \
-                   not isinstance(e, bomb_laser):
-                    if e.shooter not in self.targets:
-                        self.targets.append(e.shooter)
-
-class SniperDrone(HamburgurDrone):
+class SniperDrone(HamburgerDrone):
     def __init__(self, x, y, game):
-        HamburgurDrone.__init__(self, x, y, game)
+        HamburgerDrone.__init__(self, x, y, game)
+        self.damage = 100
+        self.dissapation = 0
         self.distance = 320
         self.cyclemax = 6
         
     def update(self):
-        platforms = self.game.LogicManager.platforms
-        entities = self.game.LogicManager.entities
-        
-        self.setupstuff(platforms)
         if len(self.targets) > 0:
             target = self.targets[0]
             
@@ -729,53 +697,56 @@ class SniperDrone(HamburgurDrone):
             Character.update(self)
             return
 
-        shoot = random.randint(1, 100)
-        if self.synchronisedShooting:
+        if self.synchronisedShooting and not self.setupSynchronisedShooting:
             shoot = 2
             if self.Wifi.cycletimer == 0:
                 self.cycles += 1
             if self.cycles >= self.cyclemax:
                 shoot = 1
                 self.cycles = 0
+
+        else:            
+            shoot = random.randint(1, 100)
         
         if shoot == 1:
-            self.setAnimationState('shoot',0.5)
-            Tx = target.rect.left + 16
-            Ty = target.rect.top  + 16
-            Sx = self.rect.left   + 16
-            Sy = self.rect.top    + 16
-            deltaX = Tx - Sx
-            deltaY = Ty - Sy
-
-
-            denom = (deltaX**2 + deltaY**2)**.5
-
-            if denom == 0: denom = .1
-            deltaX /= denom
-            time = denom/16
-            
-            yvel_laser = (deltaY - 1/2*self.game.LogicManager.globallaser.gravity * \
-                          time**2)/time
-
-            direction = (deltaX, yvel_laser/16)
-
-            laser = normal_laser(Sx, Sy, self.game, direction)
-
-            
-            laser.shooter = self
-            laser.dissipation = 0
-            laser.damage = 100
-                
-
+            self.shoot(target.rect.centerx, target.rect.centery)
         Character.update(self)
 
 
-class MachineGunDrone(HamburgurDrone):
+
+    def shoot(self, Tx, Ty):
+        self.setAnimationState('shoot',0.5)
+        Sx = self.rect.left   + 16
+        Sy = self.rect.top    + 16
+        deltaX = Tx - Sx
+        deltaY = Ty - Sy
+
+
+        denom = (deltaX**2 + deltaY**2)**.5
+
+        if denom == 0: denom = .1
+        deltaX /= denom
+        time = denom/16
+        
+        yvel_laser = (deltaY - 1/2*self.game.LogicManager.globallaser.gravity * \
+                      time**2)/time
+
+        direction = (deltaX, yvel_laser/16)
+
+        laser = normal_laser(Sx, Sy, self.game, direction)
+
+        
+        laser.shooter = self
+        laser.dissipation = self.dissapation
+        laser.damage = self.damage
+                
+
+
+
+class MachineGunDrone(HamburgerDrone):
     def __init__(self, x, y, game):
-        HamburgurDrone.__init__(self, x, y, game)
+        HamburgerDrone.__init__(self, x, y, game)
     def update(self):
-        platforms = self.game.LogicManager.platforms
-        self.setupstuff(platforms)
         if len(self.targets) > 0:
             target = self.targets[0]
             
@@ -823,7 +794,8 @@ class MachineGunDrone(HamburgurDrone):
         deltaX /= denom
         time = denom/16
         
-        yvel_laser = (deltaY - 1/2*self.game.LogicManager.globallaser.gravity * \
+        yvel_laser = (deltaY - \
+                      1/2*self.game.LogicManager.globallaser.gravity * \
                       time**2)/time
 
         direction = (deltaX, yvel_laser/16)
@@ -839,9 +811,9 @@ class MachineGunDrone(HamburgurDrone):
 
 
 
-class BlockHider(HamburgurDrone):
+class BlockHider(HamburgerDrone):
     def __init__(self, x, y, game):
-        HamburgurDrone.__init__(self, x, y, game,'blockhider')
+        HamburgerDrone.__init__(self, x, y, game,'blockhider')
 ##        self.image = pygame.image.load('data/pictures/BlockTest0.gif')
         self.health = 100
     def update(self):
@@ -891,7 +863,8 @@ class BlockHider(HamburgurDrone):
 
                 denom = (deltaX**2 + deltaY**2)**.5
                 time = denom/16
-                yvel_laser = (deltaY - 1/2*self.game.LogicManager.globallaser.gravity * \
+                yvel_laser = (deltaY - \
+                          1/2*self.game.LogicManager.globallaser.gravity * \
                               time**2)
                 if denom == 0: denom = 1
                 deltaX /= denom
@@ -924,7 +897,6 @@ class normal_laser(Entity):
 
     def __init__(self, x, y, game, direction=(1,0)):
         super().__init__(game,'laser',pygame.Rect(x, y, 5, 5))
-        self.game.LogicManager.lasers.add(self)
         self.speed = 16
         self.damage = 10
         self.dissipation = .1
@@ -935,7 +907,6 @@ class normal_laser(Entity):
         self.xvel = direction[0]*self.speed
         self.yvel = direction[1]*self.speed
         self.shooter = None
-        self.destroyed = False
         self.direction = direction
         self.prevRect = self.rect.copy()
 
@@ -1036,12 +1007,6 @@ class normal_laser(Entity):
             if not (isinstance(e, ContainmentBlock) or \
                     isinstance(e, BounceBlock)):
                 self.destroyed = True
-##                    self.game.LogicManager.globallaser.List.remove(self)
-##                    Entities.remove(self)
-
-##                    for target in self.targets:
-##
-##                        if e == target:
             if isinstance(e, bomb_laser):
                 self.destroyed = True
                 e.exploding = True
@@ -1059,7 +1024,6 @@ class normal_laser(Entity):
                     e. health -= self.damage
                     if e.health <= 0:
                         e.health = 0
-                        #entities.remove(e)
 
             return
 
@@ -1136,12 +1100,6 @@ class super_laser(normal_laser):
             if isinstance(e, Platform):
                 e.destroyed = True
                 e.destroy()
-##                    self.game.LogicManager.globallaser.List.remove(self)
-##                    Entities.remove(self)
-
-##                    for target in self.targets:
-##
-##                        if e == target:
             if isinstance(e, Character):
                     if e.health == -1:
                         return
@@ -1217,38 +1175,6 @@ class bomb_laser(normal_laser):
                 e.destroyed = True
             elif not (isinstance(e, ContainmentBlock)):
                 self.exploding = True
-                
-##    if self.exploding and \
-##       ((self.rect.left-e.rect.left)**2+\
-##        (self.rect.top-e.rect.top)**2)**.5\
-##        < self.explosionradius:
-##        
-##        if isinstance(e, DeathBlock) or \
-##           isinstance(e, IndestructibleBlock) or \
-##           isinstance(e, ExitBlock):
-##            
-##            self.destroyed = True
-##            continue
-##        
-##        elif isinstance(e, Character):
-##            ##print(e, self.shooter, e == self.shooter)
-##            if e.health == -1:
-##                continue
-##
-##            e. health -= self.damage
-##            if e.health <= 0:
-##                e.health = 0
-##                Entities.remove(e)
-##                
-##        elif isinstance(e, Platform):
-##            if self.destroyblocks:
-##                e.destroyed = True
-##
-##        elif isinstance(e, bomb_laser):
-##            e.exploding = True
-##            
-##        elif isinstance(e, normal_laser):
-##            e.destroyed = True
 
 
 
@@ -1282,12 +1208,6 @@ class WaterLazer(normal_laser):
             ##print(e, self.shooter)
             if not (isinstance(e, ContainmentBlock)):
                 self.destroyed = True
-##                    self.game.LogicManager.globallaser.List.remove(self)
-##                    Entities.remove(self)
-
-##                    for target in self.targets:
-##
-##                        if e == target:
             if isinstance(e, bomb_laser):
                 self.destroyed = True
                 e.exploding = True
@@ -1309,10 +1229,6 @@ class WaterLazer(normal_laser):
 class Platform(Entity):
     def __init__(self, x, y, game,img='platform'):
         super().__init__(game,img,pygame.Rect(x, y, 32, 32))
-        self.game.LogicManager.platforms.add(self)
-        self.platforms = self.game.LogicManager.platforms
-        self.destroyed = False
-
     def update(self):
         super().update()
     def destroy(self):
@@ -1439,9 +1355,19 @@ class HamburgerWifiBlock(Platform):
     def __init__(self,x,y, game):
         Platform.__init__(self,x,y,game,'wifiblock')
         self.cycletimermax = 20
-        self.cycletimer = 0
+        self.cycletimer = 20
+        self.searchtimermax = 200
+        self.searchtimer = 0
     def update(self):
-        self.cycletimer += 1
-        if self.cycletimer >= self.cycletimermax:
-            self.cycletimer = 0
+        if self.searchtimer <= self.searchtimermax:
+            self.searchtimer = self.searchtimermax
+            for e in filter(lambda x: isinstance(x, HamburgerDrone),
+                            self.game.LogicManager.entities):
+                e.synchronise(self)
+        self.searchtimer -1
+        if self.cycletimer <= 0:
+            self.cycletimer = self.cycletimermax
+        
+        self.cycletimer -= 1
+                
 

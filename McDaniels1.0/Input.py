@@ -101,18 +101,20 @@ class InputManager:
                   'y:',self.GameManager.LogicManager.player.rect.top)
             print('number of entities:',
                   len(self.GameManager.LogicManager.entities))
+            print(self.GameManager.GraphicsManager.obsfpsconst,
+                  self.GameManager.GraphicsManager.observedfps)
     
     def slowtime(self,key,value):
 ##        return
         if value:
-            self.GameManager.GraphicsManager.fps = 0
+            self.GameManager.GraphicsManager.fps = 100
+            self.GameManager.LogicManager.player.Time_Scale = 1
             #self.GameManager.GraphicsManager.fps -= 5
         
     def speedtime(self,key,value):
 ##        return
         if value:
-           self.GameManager.GraphicsManager.fps += 5
-
-        
+           self.GameManager.GraphicsManager.fps = 100
+           self.GameManager.LogicManager.player.Time_Scale = .5        
         
 

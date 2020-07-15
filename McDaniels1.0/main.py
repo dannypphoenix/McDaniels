@@ -68,7 +68,7 @@ def main(leveltoplay=0):
                 s = Enemy(x, y, game)
                 s.speed = enemyspeed; enemyspeed += 1
             if col == 'H':
-                h = HamburgurDrone(x, y, game)
+                h = HamburgerDrone(x, y, game)
                 h.targets.append(game.LogicManager.player)
             if col == 'B':
                 b = TomatobombDrone(x, y, game)
@@ -173,7 +173,7 @@ def main(leveltoplay=0):
 
         if leveltoplay == 0:
             for e in game.LogicManager.entities:
-                if isinstance(e, HamburgurDrone):
+                if isinstance(e, HamburgerDrone):
                     e.synchronisedShooting = True
             
         if leveltoplay == 1:
@@ -253,10 +253,11 @@ if __name__ == '__main__':
     pygame.mixer.init()
     pygame.mixer.music.load('data/Sounds/McdonaldsTest_5.wav')
     pygame.mixer.music.play(-1)
-    pygame.mixer.music.set_volume(0)#.51)
+    pygame.mixer.music.set_volume(.51)
     currentnum = 0
     while 1:
         won = main(currentnum)
         if won:
             currentnum += 1
             #print(game.InputManager.buttonlog)
+
